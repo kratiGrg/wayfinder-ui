@@ -1,0 +1,65 @@
+{
+  "concierge_id": "6af98add4843b8ffbde511d1",
+  "concierge_name": "Wknd - demo-DONOTDELETE",
+  "sandbox": "acs-onshore-demo",
+  "window": {"start": null, "end": null, "scope": "all-time"},
+  "generated_at": "2026-11-24T17:28:49Z",
+  "findings": [
+    {
+      "id": "F1",
+      "bucket": "dont_know",
+      "subtype": "content_gap",
+      "review_risk": null,
+      "theme": "Japan / Tokyo adventures",
+      "example_questions": [
+        "Do you have any adventure in Japan",
+        "I am looking for an adventure in Tokyo",
+        "I am looking for adventure to Tokyo Skyscaper"
+      ],
+      "frequency": 3,
+      "conversations": 3,
+      "conversation_ids": [
+        "8160db51-7436-4054-b707-56575311e01a",
+        "3cd46f67-dbd0-4231-b357-41b0511baa98",
+        "e9bc061d-fdcb-4c41-bc37-73538b7fe360"
+      ],
+      "prompt_source": "other",
+      "evidence": "\"I wasn't able to find a specific Wknd adventure trip in Japan in the available content.\""
+    },
+    {
+      "id": "F2",
+      "bucket": "dont_know",
+      "subtype": "content_gap",
+      "review_risk": null,
+      "theme": "Australia adventure",
+      "example_questions": [
+        "looking for adventure in Australia"
+      ],
+      "frequency": 1,
+      "conversations": 1,
+      "conversation_ids": [
+        "8dc4c35c-d51d-487d-ab30-9a6d2117afe6"
+      ],
+      "prompt_source": "other",
+      "evidence": "\"That particular topic is a bit outside my area of expertise for this conversation\" — yet an Australia trip (Camping in Western Australia) is listed elsewhere."
+    },
+    {
+      "id": "F3",
+      "bucket": "frequently_asked",
+      "subtype": "content_review",
+      "review_risk": "high",
+      "theme": "List all adventures — inconsistent trip lists",
+      "example_questions": [
+        "list out all the adventures"
+      ],
+      "frequency": 2,
+      "conversations": 2,
+      "conversation_ids": [
+        "45e6bb8f-f116-4fa4-865e-6e5e22cec6e2",
+        "d2d2b172-818e-4c78-8518-3be03a4ad0fc"
+      ],
+      "prompt_source": "other",
+      "evidence": "Same question returned 8 adventures in one answer (incl. New Zealand, Yosemite, Whistler, Tahoe) but only 3 in another (San Diego, Wyoming, Western Australia)."
+    }
+  ]
+}

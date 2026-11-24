@@ -1,0 +1,14 @@
+{
+  "name": "concierge-care-live",
+  "version": "1.3.0",
+  "private": true,
+  "description": "Concierge Care prototype UI calling CX Enterprise Coworker headlessly over MCP",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.mjs",
+    "mock": "node dev/mock-mcp.mjs",
+    "start:mock": "ALLOW_LOCAL_MCP=1 COWORKER_MCP_URL=http://127.0.0.1:8799/mcp ADOBE_IMS_TOKEN=mock-token-0000000000000000 node server.mjs",
+    "test:unit": "node dev/evidence.test.mjs && node dev/cja.test.mjs",
+    "test": "npm run test:unit && node dev/flow.test.mjs && node dev/stream.test.mjs"
+  }
+}
