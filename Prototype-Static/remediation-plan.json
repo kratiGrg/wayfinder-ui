@@ -1,0 +1,148 @@
+{
+  "concierge_id": "6af98add4843b8ffbde511d1",
+  "concierge_name": "Wknd - demo-DONOTDELETE",
+  "sandbox": "acs-onshore-demo",
+  "source_findings_file": "/workspace/concierge-care/6af98add4843b8ffbde511d1/20261125T164413Z/findings.json",
+  "generated_at": "2026-11-25T16:47:41.538875Z",
+  "content_source": {
+    "name": "stage-wknd-demo",
+    "routing": "tier=publish,bucket=p241161-e2404464",
+    "author_url": "https://author-p241161-e2404464.adobeaemcloud.com"
+  },
+  "actions": [
+    {
+      "id": "A1",
+      "addresses": [
+        "F1"
+      ],
+      "type": "content_gap",
+      "gap_cause": "content_gap",
+      "retrieval_subcause": null,
+      "content_subtype": "unpublished",
+      "review_risk": null,
+      "topic_frequency": 3,
+      "is_frequent": true,
+      "gap_evidence": {
+        "representative_question": "Do you have any adventure in Japan or Tokyo? (cid 8160db51)",
+        "conversation_id": "8160db51-7436-4054-b707-56575311e01a",
+        "content_ai_response": null,
+        "concierge_answer": "I wasn't able to find a specific Wknd adventure trip in Japan.",
+        "content_ai_answer": "No Japan/Tokyo adventures in the index.",
+        "aem_index_answer": "no_results",
+        "aem_published_source": "not_found on publish",
+        "aem_author_source": "found: 'Tokyo Skydeck Tour' at /content/wknd/us/en/adventures/skyscraper-adventure (unpublished)",
+        "published_value": null,
+        "prompt_source": "other",
+        "english_copy": null
+      },
+      "fixable_by": "content",
+      "apply_tool": "aem_publish",
+      "handoff_reason": null,
+      "change": "Publish the existing unpublished 'Tokyo Skydeck Tour' author page.",
+      "target": {
+        "field": "aem_content",
+        "detail": "Publish existing author page 'Tokyo Skydeck Tour'",
+        "aem": {
+          "site_path": "/us/en/adventures/skyscraper-adventure",
+          "author_path": "/content/wknd/us/en/adventures/skyscraper-adventure",
+          "environment": "STAGE (author-p241161-e2404464)",
+          "locales": [
+            "en"
+          ]
+        }
+      },
+      "proposed_value": "/content/wknd/us/en/adventures/skyscraper-adventure",
+      "rationale": "A Tokyo adventure page exists on author but was never published; publishing answers the repeated Japan/Tokyo asks (3x).",
+      "risk": "medium",
+      "status": "proposed"
+    },
+    {
+      "id": "A2",
+      "addresses": [
+        "F2"
+      ],
+      "type": "retrieval_gap",
+      "gap_cause": "retrieval_gap",
+      "retrieval_subcause": "concierge_retrieval",
+      "content_subtype": null,
+      "review_risk": null,
+      "topic_frequency": null,
+      "is_frequent": null,
+      "gap_evidence": {
+        "representative_question": "Do you have any adventure in Australia? (cid 8dc4c35c)",
+        "conversation_id": "8dc4c35c-d51d-487d-ab30-9a6d2117afe6",
+        "content_ai_response": [
+          {
+            "text": "Yes. The site features 'Camping in Western Australia'."
+          }
+        ],
+        "concierge_answer": "That particular topic is a bit outside my area of expertise...",
+        "content_ai_answer": "Yes \u2014 'Camping in Western Australia' is retrievable.",
+        "aem_index_answer": "addresses",
+        "aem_published_source": "found (Riverside Camping / Western Australia published Nov 20)",
+        "aem_author_source": null,
+        "published_value": null,
+        "prompt_source": "other",
+        "english_copy": null,
+        "note": "Probable root cause: guardrails.classificationPrompt rule 'Any query related to Australia should be blocked'."
+      },
+      "fixable_by": "concierge_config",
+      "apply_tool": "trace_investigate",
+      "handoff_reason": null,
+      "change": "Hand over to Trace & Investigate to diagnose why retrievable Australia content is blocked (suspected guardrail rule) and route a fix.",
+      "target": {
+        "field": "guardrails",
+        "detail": "Concierge + question 'adventure in Australia'",
+        "aem": null
+      },
+      "proposed_value": null,
+      "rationale": "Content retrievable from the index but the concierge deflects \u2014 concierge-side block, probable guardrail rule.",
+      "risk": "medium",
+      "status": "proposed"
+    },
+    {
+      "id": "A3",
+      "addresses": [
+        "F3"
+      ],
+      "type": "retrieval_gap",
+      "gap_cause": "retrieval_gap",
+      "retrieval_subcause": "concierge_retrieval",
+      "content_subtype": null,
+      "review_risk": "high",
+      "topic_frequency": 2,
+      "is_frequent": true,
+      "gap_evidence": {
+        "representative_question": "list out all the adventures (latest answer; cid d2d2b172, Nov 23 16:27)",
+        "conversation_id": "d2d2b172-818e-4c78-8518-3be03a4ad0fc",
+        "content_ai_response": [
+          {
+            "text": "Downhill Skiing Wyoming; Whistler Mountain Biking; West Coast Cycling; Tahoe Skiing; Climbing New Zealand; Yosemite Backpacking"
+          }
+        ],
+        "concierge_answer": "Latest answer listed 3: San Diego Surf Spots, Downhill Skiing in Wyoming, Camping in Western Australia.",
+        "content_ai_answer": "6 adventures: Wyoming Skiing, Whistler, West Coast Cycling, Tahoe, NZ Climbing, Yosemite.",
+        "aem_index_answer": "addresses",
+        "aem_published_source": null,
+        "aem_author_source": null,
+        "published_value": null,
+        "prompt_source": "other",
+        "english_copy": null,
+        "note": "Concierge-vs-Content-AI only: overlap 1 of concierge's 3 items; concierge dropped 5 of the 6 indexed items and added 2 ungrounded ('San Diego Surf Spots' not in the Content AI source at all). Grounding/retrieval divergence, not a content error."
+      },
+      "fixable_by": "concierge_config",
+      "apply_tool": "trace_investigate",
+      "handoff_reason": null,
+      "change": "Hand over to Trace & Investigate to diagnose why the generated list diverges from the Content AI source (drops indexed items, invents ungrounded ones).",
+      "target": {
+        "field": "instructions",
+        "detail": "Concierge + question 'list out all the adventures'",
+        "aem": null
+      },
+      "proposed_value": null,
+      "rationale": "The latest answer matches the Content AI source on only 1 of 3 items, omits 5 of 6 indexed trips, and adds ungrounded items \u2014 a concierge grounding fault, not missing/wrong content.",
+      "risk": "high",
+      "status": "proposed"
+    }
+  ]
+}
