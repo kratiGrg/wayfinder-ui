@@ -125,6 +125,20 @@ function remediationContext(actions) {
   return page;
 }
 
+test('defaults missing finding review risk to Medium without changing explicit risks or source values', () => {
+  const page = remediationContext([]);
+  for (const finding of [{ id: 'F1' }, { id: 'F1', review_risk: null }]) {
+    const before = JSON.stringify(finding);
+    const html = page.careInvestigationView(finding, 0);
+    assert.ok(html.includes('<span class="tag amber">Review risk: Medium</span>'));
+    assert.equal(JSON.stringify(finding), before);
+  }
+  for (const [risk, tone] of [['high', 'red'], ['medium', 'amber'], ['low', 'green']]) {
+    const html = page.careInvestigationView({ id: 'F1', review_risk: risk }, 0);
+    assert.ok(html.includes(`<span class="tag ${tone}">Review risk: ${risk}</span>`));
+  }
+});
+
 test('renders only matching remediation actions with nested targets and escaped plan text', () => {
   const page = remediationContext([
     {
@@ -237,6 +251,79 @@ function reviewContext(actions) {
   return { page, timers, notifications };
 }
 
+test('shows publishing feedback using the target page title until approval completes', async () => {
+  const { page, timers } = reviewContext([{
+    id: 'A1', addresses: ['F1'], fixable_by: 'content', apply_tool: 'aem_publish',
+    target: { detail: "Publish existing author page 'Kyoto <Garden> Tour'" },
+    change: 'Do not use this change as the page title.',
+  }]);
+  const approval = page.approveCareFix('A1');
+  let html = page.careRemediationView({ id: 'F1' });
+  assert.ok(html.includes('Publishing &quot;Kyoto &lt;Garden&gt; Tour&quot; page'));
+  assert.ok(!html.includes('Processing approval'));
+  assert.ok(!html.includes('<Garden>'));
+  assert.ok(!html.includes('care-fix-success'));
+  assert.ok(html.includes('<span class="care-processing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span><span>.</span><span>.</span></span>'));
+  assert.equal(page.careCanCertify(), false);
+  assert.equal(timers[0].delay, 7200);
+  timers.shift().callback();
+  await approval;
+  html = page.careRemediationView({ id: 'F1' });
+  assert.ok(html.includes('<span class="care-fix-success">Published</span>'));
+  assert.ok(!html.includes('Publishing '));
+  assert.ok(!html.includes('care-processing-dots'));
+  assert.equal(page.careCanCertify(), true);
+  page.rejectCareFix('A1');
+  assert.ok(!page.careRemediationView({ id: 'F1' }).includes('care-fix-success'));
+});
+
+test('uses supplied content target detail without inventing a missing page title', async () => {
+  const { page, timers } = reviewContext([{
+    id: 'A1', addresses: ['F1'], fixable_by: 'content',
+    target: { detail: 'Publish /content/wknd/<new-page>' },
+  }]);
+  const approval = page.approveCareFix('A1');
+  assert.ok(page.careRemediationView({ id: 'F1' })
+    .includes('Publishing: Publish /content/wknd/&lt;new-page&gt;'));
+  timers.shift().callback();
+  await approval;
+});
+
+test('selects configuration approval feedback from the traced route and escapes its diagnosis', async () => {
+  for (const [route, processing, completed] of [
+    ['COMPOSER_FIX', 'Reviewing Guardrails: Review &lt;Australia&gt; restrictions.',
+      '<span class="care-fix-success">Updated</span> Guardrails'],
+    ['SUPPORT_TICKET', 'Raising Support Ticket',
+      '<span class="care-fix-success">Raised</span> Support Ticket'],
+    ['OTHER_ROUTE', 'Processing approval...', null],
+  ]) {
+    const { page, timers } = traceContext({ results: [{
+      action_id: 'A2', trace_investigate: {
+        route, diagnosis_summary: 'Review <Australia> restrictions.',
+        suggested_fix: 'Mentioning SUPPORT_TICKET here must not choose the route.',
+      },
+    }] });
+    vm.runInContext("careAttribution.doc.actions[0].fixable_by = 'concierge_config';", page);
+    const tracing = page.runCareTrace('A2');
+    timers.shift().callback();
+    await tracing;
+    const approval = page.approveCareFix('A2');
+    let html = page.careRemediationView({ id: 'F1' });
+    assert.ok(html.includes(`role="status">${processing}<span class="care-processing-dots"`), route);
+    assert.equal(timers[0].delay, 7200);
+    assert.ok(!html.includes('<Australia>'));
+    assert.ok(!html.includes('care-fix-success'));
+    assert.equal(page.careCanCertify(), false);
+    timers.shift().callback();
+    await approval;
+    html = page.careRemediationView({ id: 'F1' });
+    if (completed) assert.ok(html.includes(completed), route);
+    else assert.ok(!html.includes('care-fix-success'));
+    assert.ok(!html.includes('care-processing-dots'));
+    assert.equal(page.careCanCertify(), true);
+  }
+});
+
 test('keeps a partially approved multi-action finding unchecked until its fixes finish processing', async () => {
   const { page, timers, notifications } = reviewContext([
     { id: 'A1', addresses: ['F1'], change: 'Publish page' },
@@ -255,7 +342,7 @@ test('keeps a partially approved multi-action finding unchecked until its fixes 
   const first = page.approveCareFix('A1');
   assert.equal(page.careCanCertify(finding), false);
   assert.ok(page.careRemediationView(finding).includes('Processing approval'));
-  assert.equal(timers[0].delay, 3600);
+  assert.equal(timers[0].delay, 7200);
   timers.shift().callback();
   await first;
   assert.equal(page.careCanCertify(finding), false);

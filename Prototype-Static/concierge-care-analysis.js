@@ -255,7 +255,8 @@ function careInvestigationView(finding, index) {
   const tab = careAnalysis.tab;
   const id = finding.id ?? `F${index + 1}`;
   const questions = finding.example_questions ?? [];
-  const riskTone = finding.review_risk === 'high' ? 'red' : finding.review_risk === 'medium' ? 'amber' : finding.review_risk === 'low' ? 'green' : '';
+  const reviewRisk = finding.review_risk ?? 'Medium';
+  const riskTone = reviewRisk === 'high' ? 'red' : reviewRisk.toLowerCase() === 'medium' ? 'amber' : reviewRisk === 'low' ? 'green' : '';
   const label = tab === 'remediate' ? 'Remediation Plan' : tab[0].toUpperCase() + tab.slice(1);
   const planReady = careAttribution.status === 'done' && careAttribution.findingIndex === index &&
     careAttributionActions(careAttribution.doc, finding.id).length > 0;
@@ -265,7 +266,7 @@ function careInvestigationView(finding, index) {
   <section class="card care-investigation" role="tabpanel" id="care-investigation-panel" aria-labelledby="care-tab-${tab}" aria-busy="${(['attribute', 'remediate'].includes(tab) && careAttribution.status === 'loading') || (tab === 'certify' && careCertification.status === 'processing')}" tabindex="0">
     <div class="card-body">
       <h2 id="care-investigation-title" tabindex="-1">${tab === 'analysis' ? `${esc(id)} · ${esc(finding.theme ?? 'Theme not provided')}` : label}</h2>
-      ${tab === 'analysis' ? `<div class="care-investigation-meta">${careBucketLabel(finding)}<span class="tag ${riskTone}">Review risk: ${esc(finding.review_risk ?? 'Not specified')}</span></div>
+      ${tab === 'analysis' ? `<div class="care-investigation-meta">${careBucketLabel(finding)}<span class="tag ${riskTone}">Review risk: ${esc(reviewRisk)}</span></div>
         <section class="care-reasoning care-user-queries"><h3>User Queries:</h3>${questions.length ? questions.map(question => `<blockquote>&ldquo;${esc(question)}&rdquo;</blockquote>`).join('') : '<p class="care-placeholder">No example queries provided.</p>'}</section>
         <section class="care-reasoning"><h3>Concierge reasoning</h3><blockquote>${esc(finding.evidence ?? 'Not provided')}</blockquote></section>
         <dl class="care-finding-stats"><div><dt>Frequency</dt><dd>${esc(finding.frequency ?? 'Not provided')}</dd></div><div><dt>Conversations</dt><dd>${esc(finding.conversations ?? 'Not provided')}</dd></div></dl>` : tab === 'attribute' ? careAttributionView(finding) : tab === 'remediate' ? careRemediationView(finding) : careCertifyView()}

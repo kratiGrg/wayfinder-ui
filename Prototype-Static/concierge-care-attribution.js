@@ -161,6 +161,33 @@ function careAttributionView(finding) {
   </article>`).join('');
 }
 
+function careFixFeedback(action, status) {
+  if (status === 'rejected') return 'Fix rejected.';
+  if (status !== 'processing' && status !== 'approved') return '';
+  const processing = status === 'processing';
+  if (action.fixable_by === 'content') {
+    if (!processing) return '<span class="care-fix-success">Published</span>';
+    const detail = action.target?.detail;
+    const title = detail?.match(/"([^"]+)"|'([^']+)'/);
+    return esc(title ? `Publishing "${title[1] ?? title[2]}" page`
+      : detail ? `Publishing: ${detail}` : 'Publishing content...');
+  }
+  const trace = careTraceInvestigations.get(action.id);
+  if (action.fixable_by === 'concierge_config' && trace?.status === 'done') {
+    const route = trace.fields.find(([label]) => label === 'Route')?.[1];
+    if (route === 'Composer Fix') {
+      const diagnosis = trace.fields.find(([label]) => label === 'Diagnosis summary')?.[1];
+      return processing ? esc(`Reviewing Guardrails${diagnosis ? `: ${diagnosis}` : ''}`)
+        : '<span class="care-fix-success">Updated</span> Guardrails';
+    }
+    if (route === 'Support Ticket') {
+      return processing ? 'Raising Support Ticket'
+        : '<span class="care-fix-success">Raised</span> Support Ticket';
+    }
+  }
+  return processing ? 'Processing approval...' : '';
+}
+
 function careRemediationView(finding) {
   if (careAttribution.status === 'loading') {
     return '<div class="care-attribution-loading" role="status" aria-live="polite"><div class="assessment-spinner" aria-hidden="true"></div><p>Preparing remediation...</p></div>';
@@ -197,6 +224,7 @@ function careRemediationView(finding) {
     const approving = review === 'processing';
     const approved = review === 'approved';
     const approvalBlocked = traceAction && trace?.status !== 'done';
+    const feedback = careFixFeedback(action, review);
     return `<article class="care-attribution-action care-remediation-action" aria-label="Action ${esc(action.id)}">
       <h3>${esc(action.id)}</h3>
       ${facts.length ? `<dl class="care-attribution-facts care-remediation-facts">${carePlanFactsView(facts)}</dl>` : ''}
@@ -211,7 +239,7 @@ function careRemediationView(finding) {
         <button class="btn" data-care-reject-fix="${esc(action.id)}">Reject</button>
         <button class="btn ${approving || approved ? 'good' : ''}" data-care-approve-fix="${esc(action.id)}" ${approvalBlocked || approving || approved ? 'disabled' : ''}>Approve Fix</button>
       </div>
-      ${approving || review === 'rejected' ? `<p class="care-fix-feedback" role="status">${approving ? 'Processing approval...' : 'Fix rejected.'}</p>` : ''}
+      ${feedback ? `<p class="care-fix-feedback ${approving || approved ? 'care-fix-status' : ''}" role="status">${feedback}${approving ? '<span class="care-processing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span><span>.</span><span>.</span></span>' : ''}</p>` : ''}
     </article>`;
   }).join('') + (careFindingApproved(finding)
     ? '<p class="care-fix-feedback" role="status">You can now proceed with Certifying this fix.</p>' : '');
@@ -295,7 +323,7 @@ async function approveCareFix(actionId) {
   resetCareCertification();
   careFixReviews.set(actionId, review);
   render();
-  await new Promise(resolve => setTimeout(resolve, 3600));
+  await new Promise(resolve => setTimeout(resolve, 7200));
   if (careFixReviews.get(actionId) !== review) return;
   review.status = 'approved';
   if (state.page === 'health' && careAnalysis.selectedFinding === index) render();

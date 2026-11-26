@@ -13,7 +13,7 @@
       "id": "F1",
       "bucket": "dont_know",
       "bucket_label": "Unresolved",
-      "subtype": "content_gap",
+      "subtype": "Content Gap",
       "review_risk": null,
       "theme": "Japan / Tokyo adventures",
       "example_questions": [
@@ -36,7 +36,7 @@
       "id": "F2",
       "bucket": "dont_know",
       "bucket_label": "Unresolved",
-      "subtype": "content_gap",
+      "subtype": "Content Gap",
       "review_risk": null,
       "theme": "Australia adventure (deflected despite content existing)",
       "example_questions": [
@@ -55,7 +55,7 @@
       "id": "F3",
       "bucket": "frequently_asked",
       "bucket_label": "High-Demand",
-      "subtype": "content_review",
+      "subtype": "Content Review",
       "review_risk": "high",
       "theme": "List all adventures \u2014 concierge answer not grounded in Content AI",
       "example_questions": [
