@@ -7,6 +7,73 @@ const source = new URL('./concierge-care-analysis.js', import.meta.url);
 const context = vm.createContext({});
 vm.runInContext(readFileSync(source, 'utf8'), context);
 
+function dashboardContext() {
+  const page = vm.createContext({});
+  const html = readFileSync(new URL('./concierge_care_coworker_deck_v4.html', import.meta.url), 'utf8');
+  vm.runInContext(html.split('\n').find(line => line.startsWith('const esc=')), page);
+  vm.runInContext(readFileSync(source, 'utf8'), page);
+  return page;
+}
+
+test('shows ten realistic sample runs with the requested concierge distribution', () => {
+  const page = dashboardContext();
+  assert.equal(typeof page.careFilteredRuns, 'function');
+  const runs = page.careFilteredRuns();
+  assert.equal(runs.length, 10);
+  assert.equal(runs.filter(run => run.concierge === 'WKND Demo').length, 4);
+  assert.equal(runs.filter(run => run.concierge === 'WKND Trendsetters').length, 3);
+  assert.equal(runs.filter(run => run.concierge === 'Frescopa').length, 3);
+  assert.equal(new Set(runs.map(run => run.id)).size, 10);
+  assert.ok(runs.every(run => Number.isSafeInteger(run.findings) && run.findings >= 12 && run.findings <= 48));
+  assert.ok(runs.every((run, index) => !index || runs[index - 1].started >= run.started));
+  assert.equal(new Set(runs.map(run => run.status)).size, 4);
+});
+
+test('entry dashboard keeps setup inline and renders every history row without pagination', () => {
+  const page = dashboardContext();
+  const html = page.careAnalysisView();
+  assert.ok(html.includes('id="care-setup-form"'));
+  assert.ok(html.includes('id="care-concierge"'));
+  assert.ok(html.includes('id="care-date-window"'));
+  assert.ok(html.includes('id="run-health-check"'));
+  assert.ok(html.includes('id="care-run-history-results"'));
+  assert.equal((html.match(/data-care-run-id=/g) ?? []).length, 10);
+  assert.ok(!html.includes('care-run-chart'));
+  assert.ok(html.includes('Sample history'));
+  for (const status of ['In Attribution Phase', 'Certify Success', 'Certify Pending', 'Certify Failed']) {
+    assert.ok(html.includes(status));
+  }
+});
+
+test('concierge and status filters narrow the recent runs table', () => {
+  const page = dashboardContext();
+  vm.runInContext("careRunFilters.concierge = 'WKND Demo';", page);
+  let runs = page.careFilteredRuns();
+  assert.equal(runs.length, 4);
+  vm.runInContext("careRunFilters.status = 'success';", page);
+  runs = page.careFilteredRuns();
+  assert.equal(runs.length, 1);
+  assert.equal(runs[0].concierge, 'WKND Demo');
+  assert.equal(runs[0].status, 'success');
+  const html = page.careRunHistoryResults();
+  assert.equal((html.match(/data-care-run-id=/g) ?? []).length, 1);
+  assert.ok(html.includes('WKND Demo'));
+  assert.ok(html.includes('Certify Success'));
+  vm.runInContext("careRunFilters.concierge = ''; careRunFilters.status = 'pending';", page);
+  assert.equal(page.careFilteredRuns().length, 3);
+});
+
+test('empty history filters show an explicit empty state without losing setup or filters', () => {
+  const page = dashboardContext();
+  vm.runInContext("careRunFilters.concierge = 'Frescopa'; careRunFilters.status = 'attribution';", page);
+  assert.equal(page.careFilteredRuns().length, 0);
+  const html = page.careAnalysisView();
+  assert.ok(html.includes('No runs match these filters.'));
+  assert.ok(!html.includes('data-care-run-id='));
+  assert.ok(html.includes('id="care-setup-form"'));
+  assert.ok(html.includes('id="care-run-status-filter"'));
+});
+
 test('counts distinct conversation IDs across all findings, not just the first page', () => {
   assert.equal(typeof context.careAnalysisSummary, 'function');
   const doc = {

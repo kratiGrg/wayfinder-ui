@@ -2,12 +2,88 @@ const careAnalysis = { status: 'idle', doc: null, page: 1, error: '', selectedFi
 const careWorkflowTabs = ['analysis', 'attribute', 'remediate', 'certify'];
 // Prototype-only selections; backend filtering is not connected.
 const careSetup = { concierge: 'WKND Demo', window: '7', from: '', to: '' };
+const careConcierges = ['WKND Demo', 'WKND Trendsetters', 'Frescopa'];
+const careRunFilters = { concierge: '', status: '' };
+const careRunStatuses = [
+  { value: 'attribution', label: 'In Attribution Phase', tone: 'blue' },
+  { value: 'success', label: 'Certify Success', tone: 'green' },
+  { value: 'pending', label: 'Certify Pending', tone: 'amber' },
+  { value: 'failed', label: 'Certify Failed', tone: 'red' },
+];
+// Display-only history, independent of the JSON-driven health check and its approval state.
+const carePastRuns = [
+  { id: 'CARE-012', concierge: 'WKND Demo', started: '2026-11-26T14:10', findings: 24, status: 'attribution' },
+  { id: 'CARE-011', concierge: 'WKND Trendsetters', started: '2026-11-26T12:05', findings: 36, status: 'attribution' },
+  { id: 'CARE-010', concierge: 'Frescopa', started: '2026-11-25T17:20', findings: 18, status: 'pending' },
+  { id: 'CARE-009', concierge: 'WKND Demo', started: '2026-11-25T14:30', findings: 42, status: 'pending' },
+  { id: 'CARE-008', concierge: 'WKND Trendsetters', started: '2026-11-24T16:45', findings: 31, status: 'success' },
+  { id: 'CARE-007', concierge: 'Frescopa', started: '2026-11-24T11:15', findings: 16, status: 'success' },
+  { id: 'CARE-006', concierge: 'WKND Demo', started: '2026-11-23T16:00', findings: 27, status: 'success' },
+  { id: 'CARE-005', concierge: 'WKND Trendsetters', started: '2026-11-23T09:40', findings: 48, status: 'pending' },
+  { id: 'CARE-004', concierge: 'Frescopa', started: '2026-11-22T17:10', findings: 22, status: 'failed' },
+  { id: 'CARE-003', concierge: 'WKND Demo', started: '2026-11-21T14:25', findings: 34, status: 'failed' },
+];
+
+function careFilteredRuns() {
+  return carePastRuns.filter(run =>
+    (!careRunFilters.concierge || run.concierge === careRunFilters.concierge) &&
+    (!careRunFilters.status || run.status === careRunFilters.status));
+}
+
+function careRunHistoryResults() {
+  const runs = careFilteredRuns();
+  if (!runs.length) return '<p class="care-history-empty">No runs match these filters. Choose a different concierge or status.</p>';
+  return `<section class="care-recent-runs" aria-labelledby="care-recent-runs-title">
+    <h3 id="care-recent-runs-title">Recent runs</h3>
+    <div class="care-run-table-scroll" role="region" aria-label="Recent runs table" tabindex="0">
+      <table class="care-run-table"><caption class="care-sr-only">Sample past health checks, newest first</caption>
+        <thead><tr><th scope="col">Run</th><th scope="col">Concierge</th><th scope="col">Started</th><th scope="col">Findings</th><th scope="col">Status</th></tr></thead>
+        <tbody>${runs.map(run => {
+          const status = careRunStatuses.find(item => item.value === run.status);
+          const started = new Date(run.started).toLocaleString('en-GB', {
+            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+          });
+          return `<tr data-care-run-id="${esc(run.id)}"><th scope="row">${esc(run.id)}</th><td>${esc(run.concierge)}</td>
+            <td><time datetime="${esc(run.started)}">${esc(started)}</time></td><td class="care-run-findings">${run.findings}</td>
+            <td><span class="tag ${status.tone}">${status.label}</span></td></tr>`;
+        }).join('')}</tbody>
+      </table>
+    </div>
+  </section>`;
+}
+
+function careDashboardView() {
+  return `<div class="page care-dashboard">
+    <header class="care-dashboard-heading"><p>Hi Krati!</p><h1>Concierge Care</h1></header>
+    <section class="card care-dashboard-setup" aria-labelledby="care-dashboard-setup-title">
+      <div class="card-body"><h2 id="care-dashboard-setup-title">New health check</h2>
+        ${careAnalysis.error ? `<p class="care-error" role="alert">${esc(careAnalysis.error)}</p>` : ''}
+        ${careSetupForm()}
+      </div>
+    </section>
+    <section class="card care-run-history" aria-labelledby="care-run-history-title">
+      <div class="care-history-head"><div><h2 id="care-run-history-title">Run history</h2><p>Sample history &middot; display only</p></div>
+        <div class="care-history-filters">
+          <div><label for="care-run-concierge-filter">Concierge</label><select id="care-run-concierge-filter" data-care-run-filter="concierge">
+            <option value="">All concierges</option>${careConcierges.map(name =>
+              `<option ${careRunFilters.concierge === name ? 'selected' : ''}>${name}</option>`).join('')}
+          </select></div>
+          <div><label for="care-run-status-filter">Status</label><select id="care-run-status-filter" data-care-run-filter="status">
+            <option value="">All statuses</option>${careRunStatuses.map(status =>
+              `<option value="${status.value}" ${careRunFilters.status === status.value ? 'selected' : ''}>${status.label}</option>`).join('')}
+          </select></div>
+        </div>
+      </div>
+      <div id="care-run-history-results" aria-live="polite">${careRunHistoryResults()}</div>
+    </section>
+  </div>`;
+}
 
 function careSetupForm() {
   return `<form class="care-setup-form" id="care-setup-form" novalidate>
     <div class="care-setup-fields">
       <div class="care-setup-field"><label for="care-concierge">Choose your Concierges</label>
-        <select id="care-concierge">${['WKND Demo', 'WKND Trendsetters', 'Frescopa'].map(name =>
+        <select id="care-concierge">${careConcierges.map(name =>
           `<option ${careSetup.concierge === name ? 'selected' : ''}>${name}</option>`).join('')}</select>
       </div>
       <div class="care-setup-field"><label for="care-date-window">Choose Date Window</label>
@@ -204,11 +280,10 @@ function careInvestigationView(finding, index) {
 
 function careAnalysisView() {
   if (careAnalysis.status !== 'done') {
-    const checking = careAnalysis.status === 'checking';
-    return `<div class="page assessment-page"><section class="assessment-empty ${checking ? '' : 'care-welcome'}" aria-label="Concierge health assessment">
-      <div role="status" aria-live="polite" aria-atomic="true">${checking ? '<div class="assessment-spinner" aria-hidden="true"></div><h2>Concierge Care</h2><p>Analysing conversations...</p>' : '<h2 class="care-greeting">Hi Krati!</h2><h2>Welcome to Concierge Care Health Check</h2>'}</div>
-      ${careAnalysis.error ? `<p class="care-error" role="alert">${esc(careAnalysis.error)}</p>` : ''}
-      ${checking ? '<button class="btn primary" id="run-health-check" disabled>Running...</button>' : careSetupForm()}
+    if (careAnalysis.status !== 'checking') return careDashboardView();
+    return `<div class="page assessment-page"><section class="assessment-empty" aria-label="Concierge health assessment">
+      <div role="status" aria-live="polite" aria-atomic="true"><div class="assessment-spinner" aria-hidden="true"></div><h2>Concierge Care</h2><p>Analysing conversations...</p></div>
+      <button class="btn primary" id="run-health-check" disabled>Running...</button>
     </section></div>`;
   }
   const doc = careAnalysis.doc;
@@ -285,6 +360,17 @@ function exportCareAnalysis() {
 function bindCareAnalysis() {
   if (document.getElementById('care-setup-form')) bindCareSetup();
   else document.getElementById('run-health-check')?.addEventListener('click', runHealthCheck);
+  view.querySelectorAll('[data-care-run-filter]').forEach(select => select.addEventListener('change', () => {
+    const field = select.dataset.careRunFilter;
+    const options = field === 'concierge' ? careConcierges
+      : field === 'status' ? careRunStatuses.map(status => status.value) : null;
+    if (!options || (select.value && !options.includes(select.value))) {
+      toast('This history filter is not available. Choose a listed concierge or status.');
+      return;
+    }
+    careRunFilters[field] = select.value;
+    document.getElementById('care-run-history-results').innerHTML = careRunHistoryResults();
+  }));
   document.getElementById('care-export')?.addEventListener('click', exportCareAnalysis);
   view.querySelectorAll('[data-care-page]').forEach(button => button.addEventListener('click', () => {
     careAnalysis.page = Number(button.dataset.carePage);
