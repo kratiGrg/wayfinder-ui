@@ -1,8 +1,8 @@
 const careAnalysis = { status: 'idle', doc: null, page: 1, error: '', selectedFinding: null, tab: 'analysis' };
 const careWorkflowTabs = ['analysis', 'attribute', 'remediate', 'certify'];
 // Prototype-only selections; backend filtering is not connected.
-const careSetup = { concierge: 'WKND Demo', window: '7', from: '', to: '' };
-const careConcierges = ['WKND Demo', 'WKND Trendsetters', 'Frescopa'];
+const careSetup = { concierge: 'WKND', window: '7', from: '', to: '' };
+const careConcierges = ['WKND', 'WKND Trendsetters', 'Frescopa'];
 const careRunFilters = { concierge: '', status: '' };
 const careRunStatuses = [
   { value: 'attribution', label: 'In Attribution Phase', tone: 'blue' },
@@ -12,16 +12,16 @@ const careRunStatuses = [
 ];
 // Display-only history, independent of the JSON-driven health check and its approval state.
 const carePastRuns = [
-  { id: 'CARE-012', concierge: 'WKND Demo', started: '2026-11-26T14:10', findings: 24, status: 'attribution' },
+  { id: 'CARE-012', concierge: 'WKND', started: '2026-11-26T14:10', findings: 24, status: 'attribution' },
   { id: 'CARE-011', concierge: 'WKND Trendsetters', started: '2026-11-26T12:05', findings: 36, status: 'attribution' },
   { id: 'CARE-010', concierge: 'Frescopa', started: '2026-11-25T17:20', findings: 18, status: 'pending' },
-  { id: 'CARE-009', concierge: 'WKND Demo', started: '2026-11-25T14:30', findings: 42, status: 'pending' },
+  { id: 'CARE-009', concierge: 'WKND', started: '2026-11-25T14:30', findings: 42, status: 'pending' },
   { id: 'CARE-008', concierge: 'WKND Trendsetters', started: '2026-11-24T16:45', findings: 31, status: 'success' },
   { id: 'CARE-007', concierge: 'Frescopa', started: '2026-11-24T11:15', findings: 16, status: 'success' },
-  { id: 'CARE-006', concierge: 'WKND Demo', started: '2026-11-23T16:00', findings: 27, status: 'success' },
+  { id: 'CARE-006', concierge: 'WKND', started: '2026-11-23T16:00', findings: 27, status: 'success' },
   { id: 'CARE-005', concierge: 'WKND Trendsetters', started: '2026-11-23T09:40', findings: 48, status: 'pending' },
   { id: 'CARE-004', concierge: 'Frescopa', started: '2026-11-22T17:10', findings: 22, status: 'failed' },
-  { id: 'CARE-003', concierge: 'WKND Demo', started: '2026-11-21T14:25', findings: 34, status: 'failed' },
+  { id: 'CARE-003', concierge: 'WKND', started: '2026-11-21T14:25', findings: 34, status: 'failed' },
 ];
 
 function careFilteredRuns() {
@@ -36,7 +36,7 @@ function careRunHistoryResults() {
   return `<section class="care-recent-runs" aria-labelledby="care-recent-runs-title">
     <h3 id="care-recent-runs-title">Recent runs</h3>
     <div class="care-run-table-scroll" role="region" aria-label="Recent runs table" tabindex="0">
-      <table class="care-run-table"><caption class="care-sr-only">Sample past health checks, newest first</caption>
+      <table class="care-run-table"><caption class="care-sr-only">Past health checks, newest first</caption>
         <thead><tr><th scope="col">Run</th><th scope="col">Concierge</th><th scope="col">Started</th><th scope="col">Findings</th><th scope="col">Status</th></tr></thead>
         <tbody>${runs.map(run => {
           const status = careRunStatuses.find(item => item.value === run.status);
@@ -62,7 +62,7 @@ function careDashboardView() {
       </div>
     </section>
     <section class="card care-run-history" aria-labelledby="care-run-history-title">
-      <div class="care-history-head"><div><h2 id="care-run-history-title">Run history</h2><p>Sample history &middot; display only</p></div>
+      <div class="care-history-head"><div><h2 id="care-run-history-title">Run history</h2><p>Recent health checks</p></div>
         <div class="care-history-filters">
           <div><label for="care-run-concierge-filter">Concierge</label><select id="care-run-concierge-filter" data-care-run-filter="concierge">
             <option value="">All concierges</option>${careConcierges.map(name =>
@@ -215,6 +215,16 @@ function careBucketLabel(finding) {
   return `<span class="tag care-bucket-label ${tone}">${esc(finding.bucket_label ?? 'Bucket not provided')}</span>`;
 }
 
+function careFindingSummary(finding) {
+  const evidence = finding.evidence?.replace(/\s+/g, ' ').trim();
+  if (!evidence) return 'No supporting evidence provided.';
+  const characters = Array.from(evidence);
+  if (characters.length <= 180) return evidence;
+  const preview = characters.slice(0, 177).join('');
+  const boundary = preview.lastIndexOf(' ');
+  return `${boundary > 0 ? preview.slice(0, boundary) : preview}...`;
+}
+
 function careFindingView(finding, index) {
   const id = finding.id ?? `F${index + 1}`;
   const questions = finding.example_questions ?? [];
@@ -224,7 +234,8 @@ function careFindingView(finding, index) {
       <div class="care-finding-main">
         ${careBucketLabel(finding)}
         <div><h3 id="care-finding-${index}">${esc(id)} · ${esc(finding.theme ?? 'Theme not provided')}</h3>
-          <p class="care-subtype">${esc(finding.subtype ?? 'Subtype not provided')}</p></div>
+          <p class="care-subtype">${esc(finding.subtype ?? 'Subtype not provided')}${finding.conversations != null ? ` &middot; ${finding.conversations} ${finding.conversations === 1 ? 'conversation' : 'conversations'}` : ''}</p>
+          <p class="care-finding-summary">${esc(careFindingSummary(finding))}</p></div>
       </div>
       <button class="btn primary" data-care-investigate="${index}" aria-label="Investigate ${esc(id)}">Investigate</button>
     </div>
@@ -414,7 +425,7 @@ function bindCareAnalysis() {
   }));
   view.querySelector('[data-care-certify-download]')?.addEventListener('click', event => {
     event.preventDefault();
-    toast('This is a prototype download link. CSV generation is not connected.');
+    toast('The evaluation set cannot be downloaded yet. CSV generation is not connected.');
   });
   view.querySelectorAll('.care-workflow-tabs [role="tab"]').forEach(button => button.addEventListener('keydown', event => {
     const tabs = Array.from(view.querySelectorAll('.care-workflow-tabs [role="tab"]:not(:disabled)'), tab => tab.dataset.careTab);
