@@ -210,9 +210,13 @@ function careAnalysisPage(doc, requestedPage) {
   return { page, pages, offset, items: doc.findings.slice(offset, offset + 5) };
 }
 
+function careText(value) {
+  return esc(value).replace(/\bcontent(?:\s+|-)enrichment\b/gi, text => `<strong>${text}</strong>`);
+}
+
 function careBucketLabel(finding) {
   const tone = finding.bucket === 'dont_know' ? 'blue' : finding.bucket === 'frequently_asked' ? 'amber' : '';
-  return `<span class="tag care-bucket-label ${tone}">${esc(finding.bucket_label ?? 'Bucket not provided')}</span>`;
+  return `<span class="tag care-bucket-label ${tone}">${careText(finding.bucket_label ?? 'Bucket not provided')}</span>`;
 }
 
 function careFindingSummary(finding) {
@@ -233,17 +237,17 @@ function careFindingView(finding, index) {
     <div class="care-finding-head">
       <div class="care-finding-main">
         ${careBucketLabel(finding)}
-        <div><h3 id="care-finding-${index}">${esc(id)} · ${esc(finding.theme ?? 'Theme not provided')}</h3>
-          <p class="care-subtype">${esc(finding.subtype ?? 'Subtype not provided')}${finding.conversations != null ? ` &middot; ${finding.conversations} ${finding.conversations === 1 ? 'conversation' : 'conversations'}` : ''}</p>
-          <p class="care-finding-summary">${esc(careFindingSummary(finding))}</p></div>
+        <div><h3 id="care-finding-${index}">${esc(id)} · ${careText(finding.theme ?? 'Theme not provided')}</h3>
+          <p class="care-subtype">${careText(finding.subtype ?? 'Subtype not provided')}${finding.conversations != null ? ` &middot; ${finding.conversations} ${finding.conversations === 1 ? 'conversation' : 'conversations'}` : ''}</p>
+          <p class="care-finding-summary">${careText(careFindingSummary(finding))}</p></div>
       </div>
       <button class="btn primary" data-care-investigate="${index}" aria-label="Investigate ${esc(id)}">Investigate</button>
     </div>
     <details class="care-details">
       <summary>Details</summary>
       <div class="care-details-body">
-        <section><h4>User Questions</h4>${questions.length ? `<ul>${questions.map(question => `<li>${esc(question)}</li>`).join('')}</ul>` : '<p>Not provided</p>'}</section>
-        <section><h4>Evidence</h4><blockquote>${esc(finding.evidence ?? 'Not provided')}</blockquote></section>
+        <section><h4>User Questions</h4>${questions.length ? `<ul>${questions.map(question => `<li>${careText(question)}</li>`).join('')}</ul>` : '<p>Not provided</p>'}</section>
+        <section><h4>Evidence</h4><blockquote>${careText(finding.evidence ?? 'Not provided')}</blockquote></section>
         <section><h4>Conversation IDs</h4>${ids.length ? `<ul class="care-conversation-ids">${ids.map(id => `<li><code>${esc(id)}</code></li>`).join('')}</ul>` : '<p>Not provided</p>'}</section>
       </div>
     </details>
@@ -276,10 +280,10 @@ function careInvestigationView(finding, index) {
   </div>
   <section class="card care-investigation" role="tabpanel" id="care-investigation-panel" aria-labelledby="care-tab-${tab}" aria-busy="${(['attribute', 'remediate'].includes(tab) && careAttribution.status === 'loading') || (tab === 'certify' && careCertification.status === 'processing')}" tabindex="0">
     <div class="card-body">
-      <h2 id="care-investigation-title" tabindex="-1">${tab === 'analysis' ? `${esc(id)} · ${esc(finding.theme ?? 'Theme not provided')}` : label}</h2>
+      <h2 id="care-investigation-title" tabindex="-1">${tab === 'analysis' ? `${esc(id)} · ${careText(finding.theme ?? 'Theme not provided')}` : label}</h2>
       ${tab === 'analysis' ? `<div class="care-investigation-meta">${careBucketLabel(finding)}<span class="tag ${riskTone}">Review risk: ${esc(reviewRisk)}</span></div>
-        <section class="care-reasoning care-user-queries"><h3>User Queries:</h3>${questions.length ? questions.map(question => `<blockquote>&ldquo;${esc(question)}&rdquo;</blockquote>`).join('') : '<p class="care-placeholder">No example queries provided.</p>'}</section>
-        <section class="care-reasoning"><h3>Concierge reasoning</h3><blockquote>${esc(finding.evidence ?? 'Not provided')}</blockquote></section>
+        <section class="care-reasoning care-user-queries"><h3>User Queries:</h3>${questions.length ? questions.map(question => `<blockquote>&ldquo;${careText(question)}&rdquo;</blockquote>`).join('') : '<p class="care-placeholder">No example queries provided.</p>'}</section>
+        <section class="care-reasoning"><h3>Concierge reasoning</h3><blockquote>${careText(finding.evidence ?? 'Not provided')}</blockquote></section>
         <dl class="care-finding-stats"><div><dt>Frequency</dt><dd>${esc(finding.frequency ?? 'Not provided')}</dd></div><div><dt>Conversations</dt><dd>${esc(finding.conversations ?? 'Not provided')}</dd></div></dl>` : tab === 'attribute' ? careAttributionView(finding) : tab === 'remediate' ? careRemediationView(finding) : careCertifyView()}
       <div class="actions care-investigation-actions">${tab === 'attribute'
         ? `<button class="btn" data-care-tab="analysis">Go Back</button><button class="btn primary" data-care-tab="remediate" ${planReady ? '' : 'disabled'}>Remediate</button>`
@@ -416,6 +420,13 @@ function bindCareAnalysis() {
   }));
   view.querySelectorAll('[data-care-approve-fix]').forEach(button => button.addEventListener('click', () => {
     approveCareFix(button.dataset.careApproveFix);
+  }));
+  view.querySelectorAll('[data-care-author-form]').forEach(form => form.addEventListener('submit', event => {
+    event.preventDefault();
+    authorCareContent(form.dataset.careAuthorForm, form.querySelector('input').value);
+  }));
+  view.querySelectorAll('[data-care-publish-fix]').forEach(button => button.addEventListener('click', () => {
+    publishCareContent(button.dataset.carePublishFix);
   }));
   view.querySelectorAll('[data-care-reject-fix]').forEach(button => button.addEventListener('click', () => {
     rejectCareFix(button.dataset.careRejectFix);

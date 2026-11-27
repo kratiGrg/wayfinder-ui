@@ -1,52 +1,30 @@
 {
   "concierge_id": "6af98add4843b8ffbde511d1",
-  "concierge_name": "Wknd - demo-DONOTDELETE",
+  "concierge_name": "Wknd - demo",
   "sandbox": "acs-onshore-demo",
-  "source_plan_file": "/workspace/concierge-care/6af98add4843b8ffbde511d1/20261125T164413Z/remediation-plan.json",
-  "applied_at": "2026-11-25T17:45:12.792805Z",
+  "source_plan_file": "/workspace/concierge-care/6af98add4843b8ffbde511d1/20261127T055552Z/remediation-plan.json",
+  "applied_at": "2026-11-27T06:25:00Z",
   "results": [
     {
-      "action_id": "A1",
-      "addresses": [
-        "F1"
-      ],
-      "approved_by_user": true,
-      "applied": true,
-      "apply_tool": "aem_publish",
-      "backup_ref": "backup/app_instance.json (page was unpublished pre-write)",
-      "outcome": "applied",
-      "error": null,
-      "aem": {
-        "target_path": "/content/wknd/us/en/adventures/skyscraper-adventure",
-        "environment": "STAGE (p241161-e2404464)",
-        "publish_outcome": "published"
-      }
-    },
-    {
-      "action_id": "A2",
-      "addresses": [
-        "F2"
-      ],
+      "action_id": "A3",
+      "addresses": ["F3"],
       "approved_by_user": true,
       "applied": false,
       "apply_tool": "trace_investigate",
-      "backup_ref": "backup/app_instance.json",
-      "outcome": "recommended",
-      "error": null,
-      "job_id": null,
+      "backup_ref": "backup/app_instance_6af98add4843b8ffbde511d1.json",
       "trace_investigate": {
         "route": "COMPOSER_FIX",
-        "diagnosis_summary": "GUARDRAIL_REVIEW_REQUIRED (confidence MEDIUM) \u2014 request blocked by moderation before Content AI ran; guardrail rule blocks Australia queries.",
+        "diagnosis_summary": "GUARDRAIL_REVIEW_REQUIRED — trace shows a guardrail block; Content AI was never invoked for the Australia ask.",
         "review_attributes": "controls.guardrails.prompt",
-        "current_value": "Guardrail classification BLOCKED list includes: 'Any query related to Australia should be blocked' (alongside profanity/harmful and jailbreak/prompt-injection).",
-        "suggested_fix": "In Composer, remove the 'Any query related to Australia should be blocked' rule from controls.guardrails.prompt; keep the profanity/harmful and jailbreak/prompt-injection restrictions. Australia adventure content is published and in-scope."
-      }
+        "current_value": "Guardrail BLOCKED list currently includes: 'Any query related to Australia should be blocked' (alongside profanity/harmful and jailbreak/prompt-injection).",
+        "suggested_fix": "Review controls.guardrails.prompt against the user question and intended brand scope. Narrow the conflicting Australia rule, while preserving legitimate safety restrictions."
+      },
+      "outcome": "recommended",
+      "error": null
     },
     {
-      "action_id": "A3",
-      "addresses": [
-        "F3"
-      ],
+      "action_id": "A5",
+      "addresses": ["F5"],
       "approved_by_user": true,
       "applied": false,
       "apply_tool": "trace_investigate",
@@ -61,6 +39,32 @@
       },
       "outcome": "support_ticket",
       "error": null
+    },
+    {
+      "action_id": "A1",
+      "addresses": ["F1", "F4"],
+      "approved_by_user": true,
+      "applied": false,
+      "apply_tool": "aem_publish",
+      "backup_ref": "backup/app_instance.json",
+      "error": null,
+      "aem": {
+        "target_path": "/content/wknd/us/en/adventures/skyscraper-adventure",
+        "environment": "STAGE (p241161-e2404464)",
+        "publish_outcome": "published"
+      }
+    },
+    {
+      "action_id": "A2",
+      "addresses": ["F2"],
+      "apply_tool": "aem_author_publish",
+      "backup_ref": "backup/app_instance.json",
+      "error": null,
+      "aem": {
+        "target_path": "/content/wknd/us/en/adventures/trekking-India",
+        "environment": "STAGE (p241161-e2404464)",
+        "publish_outcome": "authored and published"
+      }
     }
   ]
 }

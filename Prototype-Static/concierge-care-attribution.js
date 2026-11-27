@@ -130,7 +130,7 @@ function careAttributionEvidenceView(value) {
     const text = item && typeof item === 'object'
       ? typeof item.text === 'string' ? item.text : JSON.stringify(item, null, 2)
       : String(item);
-    return `<blockquote>${esc(text)}</blockquote>`;
+    return `<blockquote>${careText(text)}</blockquote>`;
   }).join('');
 }
 
@@ -138,7 +138,7 @@ function carePlanFactsView(fields) {
   return fields.map(field => {
     const riskTone = field.value === 'High' ? 'red' : field.value === 'Low' ? 'green' : field.value === 'Medium' ? 'amber' : '';
     const risk = field.label === 'Review risk' || field.label === 'Risk';
-    return `<div><dt>${esc(field.label)}</dt><dd>${risk ? `<span class="tag ${riskTone}">${esc(field.value)}</span>` : esc(field.value)}</dd></div>`;
+    return `<div><dt>${esc(field.label)}</dt><dd>${risk ? `<span class="tag ${riskTone}">${esc(field.value)}</span>` : careText(field.value)}</dd></div>`;
   }).join('');
 }
 
@@ -163,6 +163,11 @@ function careAttributionView(finding) {
 
 function careFixFeedback(action, status) {
   if (status === 'rejected') return 'Fix rejected.';
+  if (action.apply_tool === 'aem_author_publish') {
+    if (status === 'authoring') return 'Authoring content';
+    if (status === 'publishing') return 'Publishing India Trekking Page';
+    return status === 'approved' ? '<span class="care-fix-success">Published</span>' : '';
+  }
   if (status !== 'processing' && status !== 'approved') return '';
   const processing = status === 'processing';
   if (action.fixable_by === 'content') {
@@ -219,10 +224,13 @@ function careRemediationView(finding) {
     ].filter(([key]) => action[key] != null)
       .map(([key, label]) => `<section class="care-reasoning"><h4>${esc(label)}</h4>${careAttributionEvidenceView(action[key])}</section>`).join('');
     const targetView = targetFields.length ? `<div class="care-attribution-evidence care-remediation-details care-remediation-target-section"><section class="care-reasoning"><h4>Target</h4><blockquote><dl class="care-remediation-target">${targetFields.map(([label, value]) =>
-      `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join('')}</dl></blockquote></section></div>` : '';
+      `<div><dt>${esc(label)}</dt><dd>${careText(value)}</dd></div>`).join('')}</dl></blockquote></section></div>` : '';
     const review = careFixReviews.get(action.id)?.status;
-    const approving = review === 'processing';
+    const approving = ['processing', 'authoring', 'publishing'].includes(review);
     const approved = review === 'approved';
+    const accepted = approving || approved || ['awaiting_prompt', 'authored'].includes(review);
+    const authorAction = action.apply_tool === 'aem_author_publish';
+    const authored = authorAction && ['authored', 'publishing', 'approved'].includes(review);
     const approvalBlocked = traceAction && trace?.status !== 'done';
     const feedback = careFixFeedback(action, review);
     return `<article class="care-attribution-action care-remediation-action" aria-label="Action ${esc(action.id)}">
@@ -237,8 +245,15 @@ function careRemediationView(finding) {
       ${targetView}
       <div class="actions care-fix-decisions" aria-busy="${approving}">
         <button class="btn" data-care-reject-fix="${esc(action.id)}">Reject</button>
-        <button class="btn ${approving || approved ? 'good' : ''}" data-care-approve-fix="${esc(action.id)}" ${approvalBlocked || approving || approved ? 'disabled' : ''}>Approve Fix</button>
+        <button class="btn ${accepted ? 'good' : ''}" data-care-approve-fix="${esc(action.id)}" ${approvalBlocked || accepted ? 'disabled' : ''}>Approve Fix</button>
       </div>
+      ${authorAction && review === 'awaiting_prompt' ? `<form class="care-author-form" data-care-author-form="${esc(action.id)}">
+        <label for="care-author-prompt-${esc(action.id)}">Enter a prompt to create content</label>
+        <input type="text" id="care-author-prompt-${esc(action.id)}" name="prompt" maxlength="4000" required placeholder="Describe the content, then press Enter" autocomplete="off">
+      </form>` : ''}
+      ${authored ? `<p class="care-fix-feedback care-fix-status" role="status">Authored. Check this out:
+        <a class="care-authored-link" href="https://e2404464.adobeaemcloud.com/ui#/aem/editor.html//content/wknd/us/en/adventures/trekking-India.html" target="_blank" rel="noopener noreferrer">e2404464.adobeaemcloud.com/ui#/aem/editor.html//content/wknd/us/en/adventures/trekking-India.html</a>
+      </p><div class="actions care-fix-publish"><button class="btn primary" data-care-publish-fix="${esc(action.id)}" ${review !== 'authored' ? 'disabled' : ''}>Publish</button></div>` : ''}
       ${feedback ? `<p class="care-fix-feedback ${approving || approved ? 'care-fix-status' : ''}" role="status">${feedback}${approving ? '<span class="care-processing-dots" aria-hidden="true"><span>.</span><span>.</span><span>.</span><span>.</span><span>.</span></span>' : ''}</p>` : ''}
     </article>`;
   }).join('') + (careFindingApproved(finding)
@@ -262,7 +277,7 @@ function careCertifyView() {
   return `<ul class="care-certify-findings" aria-label="Finding approvals">
     ${(careAnalysis.doc?.findings ?? []).map(finding => `<li><label>
       <input type="checkbox" disabled ${careFindingApproved(finding) ? 'checked' : ''}>
-      <span><strong>${esc(finding.id)}</strong><span>${esc(finding.theme ?? 'Theme not provided')}</span></span>
+      <span><strong>${esc(finding.id)}</strong><span>${careText(finding.theme ?? 'Theme not provided')}</span></span>
     </label></li>`).join('')}
     </ul>
     <section class="care-certify-caution" aria-labelledby="care-certify-caution-title">
@@ -314,8 +329,15 @@ async function approveCareFix(actionId) {
     return;
   }
   const status = careFixReviews.get(actionId)?.status;
-  if (status === 'processing' || status === 'approved') {
-    toast('This fix is already processing or approved.');
+  if (status && status !== 'rejected') {
+    toast('This fix is already accepted. Complete its current step or Reject it to start again.');
+    return;
+  }
+  if (action.apply_tool === 'aem_author_publish') {
+    resetCareCertification();
+    careFixReviews.set(actionId, { status: 'awaiting_prompt' });
+    render();
+    document.getElementById(`care-author-prompt-${actionId}`)?.focus();
     return;
   }
   const index = careAnalysis.selectedFinding;
@@ -323,10 +345,47 @@ async function approveCareFix(actionId) {
   resetCareCertification();
   careFixReviews.set(actionId, review);
   render();
+  await completeCareFixStep(actionId, review, index, 'approved');
+}
+
+async function completeCareFixStep(actionId, review, index, nextStatus) {
   await new Promise(resolve => setTimeout(resolve, 7200));
   if (careFixReviews.get(actionId) !== review) return;
-  review.status = 'approved';
+  review.status = nextStatus;
   if (state.page === 'health' && careAnalysis.selectedFinding === index) render();
+}
+
+async function authorCareContent(actionId, prompt) {
+  const action = careReviewableAction(actionId);
+  if (!action) return;
+  if (action.apply_tool !== 'aem_author_publish' || careFixReviews.get(actionId)?.status !== 'awaiting_prompt') {
+    toast('Approve this author-and-publish fix before entering a content prompt.');
+    return;
+  }
+  if (typeof prompt !== 'string' || !prompt.trim() || prompt.length > 4000) {
+    toast('Enter a content prompt between 1 and 4000 characters.');
+    return;
+  }
+  const review = { status: 'authoring', prompt: prompt.trim() };
+  resetCareCertification();
+  careFixReviews.set(actionId, review);
+  render();
+  await completeCareFixStep(actionId, review, careAnalysis.selectedFinding, 'authored');
+}
+
+async function publishCareContent(actionId) {
+  const action = careReviewableAction(actionId);
+  if (!action) return;
+  const draft = careFixReviews.get(actionId);
+  if (action.apply_tool !== 'aem_author_publish' || draft?.status !== 'authored') {
+    toast('Wait for content authoring to finish before publishing this fix.');
+    return;
+  }
+  const review = { ...draft, status: 'publishing' };
+  resetCareCertification();
+  careFixReviews.set(actionId, review);
+  render();
+  await completeCareFixStep(actionId, review, careAnalysis.selectedFinding, 'approved');
 }
 
 function rejectCareFix(actionId) {
@@ -413,7 +472,7 @@ function resetCareAttribution(preserveApprovals = false) {
       if (trace.status === 'loading') careTraceInvestigations.delete(id);
     }
     for (const [id, review] of careFixReviews) {
-      if (review.status === 'processing') careFixReviews.delete(id);
+      if (['processing', 'authoring', 'publishing'].includes(review.status)) careFixReviews.delete(id);
     }
   } else {
     careTraceInvestigations.clear();

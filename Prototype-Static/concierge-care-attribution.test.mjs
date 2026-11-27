@@ -251,6 +251,159 @@ function reviewContext(actions) {
   return { page, timers, notifications };
 }
 
+test('emphasizes Content Enrichment in findings and remediation without allowing HTML injection', () => {
+  const page = remediationContext([{
+    id: 'A1', addresses: ['F1'], change: 'Content-enrichment opportunity: <script>unsafe</script>',
+    rationale: 'Review Content Enrichment.',
+  }]);
+  const finding = { id: 'F1', theme: 'Content Enrichment', evidence: 'content enrichment <img src=x>' };
+  const findings = page.careFindingView(finding, 0);
+  assert.ok(findings.includes('<strong>Content Enrichment</strong>'));
+  assert.ok(findings.includes('<strong>content enrichment</strong> &lt;img src=x&gt;'));
+  const remediation = page.careRemediationView(finding);
+  assert.ok(remediation.includes('<strong>Content-enrichment</strong> opportunity: &lt;script&gt;unsafe&lt;/script&gt;'));
+  assert.ok(remediation.includes('<strong>Content Enrichment</strong>.'));
+  assert.ok(!remediation.includes('<script>'));
+});
+
+test('author-publish approval requires a prompt, then separate authoring and publishing before certification', async () => {
+  const { page, timers } = reviewContext([{
+    id: 'A1', addresses: ['F1'], fixable_by: 'content', apply_tool: 'aem_author_publish',
+  }]);
+  const approval = page.approveCareFix('A1');
+  assert.equal(timers.length, 0, 'Author-publish approval must wait for a prompt, not start publishing');
+  await approval;
+  let html = page.careRemediationView({ id: 'F1' });
+  assert.ok(html.includes('data-care-author-form="A1"'));
+  assert.ok(html.includes('Enter a prompt to create content'));
+  assert.equal(timers.length, 0);
+  assert.equal(page.careCanCertify(), false);
+  const authoring = page.authorCareContent('A1', 'Create an India trekking page <script>do not execute</script>');
+  html = page.careRemediationView({ id: 'F1' });
+  assert.ok(html.includes('Authoring content'));
+  assert.ok(html.includes('care-processing-dots'));
+  assert.ok(!html.includes('data-care-publish-fix'));
+  assert.ok(!html.includes('<script>'));
+  assert.equal(timers[0].delay, 7200);
+  timers.shift().callback();
+  await authoring;
+  html = page.careRemediationView({ id: 'F1' });
+  assert.ok(html.includes('Authored. Check this out:'));
+  assert.ok(html.includes('href="https://e2404464.adobeaemcloud.com/ui#/aem/editor.html//content/wknd/us/en/adventures/trekking-India.html"'));
+  assert.ok(html.includes('rel="noopener noreferrer"'));
+  assert.ok(html.includes('data-care-publish-fix="A1"'));
+  assert.equal(page.careFindingApproved({ id: 'F1' }), false);
+  const publishing = page.publishCareContent('A1');
+  html = page.careRemediationView({ id: 'F1' });
+  assert.ok(html.includes('Publishing India Trekking Page'));
+  assert.ok(html.includes('care-processing-dots'));
+  assert.match(html, /<button[^>]*data-care-publish-fix="A1"[^>]*disabled/);
+  assert.equal(page.careCanCertify(), false);
+  assert.equal(timers[0].delay, 7200);
+  timers.shift().callback();
+  await publishing;
+  html = page.careRemediationView({ id: 'F1' });
+  assert.ok(html.includes('<span class="care-fix-success">Published</span>'));
+  assert.ok(!html.includes('care-processing-dots'));
+  assert.equal(page.careCanCertify(), true);
+});
+
+test('author-publish rejects invalid prompts and premature or duplicate steps', async () => {
+  const { page, timers, notifications } = reviewContext([{
+    id: 'A1', addresses: ['F1'], apply_tool: 'aem_author_publish', fixable_by: 'content',
+  }]);
+  assert.equal(typeof page.publishCareContent, 'function');
+  assert.equal(typeof page.authorCareContent, 'function');
+  await page.publishCareContent('A1');
+  await page.authorCareContent('A1', 'Before approval');
+  await page.approveCareFix('A1');
+  for (const prompt of ['', '   ', null, 'x'.repeat(4001)]) await page.authorCareContent('A1', prompt);
+  await page.approveCareFix('A1');
+  assert.equal(timers.length, 0);
+  assert.ok(notifications.length >= 7);
+  const authoring = page.authorCareContent('A1', 'Create a real trip page');
+  await page.authorCareContent('A1', 'Duplicate');
+  await page.publishCareContent('A1');
+  assert.equal(timers.length, 1);
+  page.rejectCareFix('A1');
+  timers.shift().callback();
+  await authoring;
+  assert.ok(!page.careRemediationView({ id: 'F1' }).includes('Authored.'));
+  assert.equal(page.careCanCertify(), false);
+});
+
+test('author-publish drafts survive unchanged reloads while stale steps and changed plans cannot approve', async () => {
+  const doc = { actions: [{ id: 'A1', addresses: ['F1'], apply_tool: 'aem_author_publish', fixable_by: 'content' }] };
+  const { page, timers } = reviewContext(structuredClone(doc.actions));
+  assert.equal(typeof page.authorCareContent, 'function');
+  page.location = { protocol: 'http:' };
+  page.AbortSignal = AbortSignal;
+  page.fetch = async () => ({ ok: true, json: async () => structuredClone(doc) });
+  await page.approveCareFix('A1');
+  let pending = page.authorCareContent('A1', 'Create India trekking content');
+  timers.shift().callback();
+  await pending;
+  let loading = page.runCareAttribution();
+  timers.shift().callback();
+  await loading;
+  assert.ok(page.careRemediationView({ id: 'F1' }).includes('Authored.'));
+  pending = page.publishCareContent('A1');
+  page.resetCareAttribution(true);
+  timers.shift().callback();
+  await pending;
+  assert.equal(page.careCanCertify(), false);
+  loading = page.runCareAttribution();
+  timers.shift().callback();
+  await loading;
+  await page.approveCareFix('A1');
+  pending = page.authorCareContent('A1', 'New prompt');
+  timers.shift().callback();
+  await pending;
+  doc.actions[0].change = 'Changed content request';
+  loading = page.runCareAttribution();
+  timers.shift().callback();
+  await loading;
+  assert.ok(!page.careRemediationView({ id: 'F1' }).includes('Authored.'));
+  await page.approveCareFix('A1');
+  pending = page.authorCareContent('A1', 'Restart cancels this');
+  page.resetCareAttribution();
+  timers.shift().callback();
+  await pending;
+  assert.equal(page.careCanCertify(), false);
+});
+
+test('authoring form submit and Publish button invoke the gated author-publish workflow', async () => {
+  const { page, timers } = reviewContext([{ id: 'A1', addresses: ['F1'], apply_tool: 'aem_author_publish' }]);
+  assert.equal(typeof page.authorCareContent, 'function');
+  const handlers = new Map();
+  page.document.getElementById = () => null;
+  const form = {
+    dataset: { careAuthorForm: 'A1' },
+    querySelector: () => ({ value: 'Create India trekking content' }),
+    addEventListener: (event, handler) => handlers.set(`form-${event}`, handler),
+  };
+  page.view = {
+    querySelectorAll: selector => selector === '[data-care-author-form]' ? [form]
+      : selector === '[data-care-publish-fix]' ? [{
+        dataset: { carePublishFix: 'A1' },
+        addEventListener: (event, handler) => handlers.set(`publish-${event}`, handler),
+      }] : [],
+    querySelector: () => null,
+  };
+  await page.approveCareFix('A1');
+  page.bindCareAnalysis();
+  let prevented = false;
+  handlers.get('form-submit')({ preventDefault() { prevented = true; } });
+  assert.equal(prevented, true);
+  timers.shift().callback();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.ok(page.careRemediationView({ id: 'F1' }).includes('Authored.'));
+  handlers.get('publish-click')();
+  timers.shift().callback();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(page.careCanCertify(), true);
+});
+
 test('shows publishing feedback using the target page title until approval completes', async () => {
   const { page, timers } = reviewContext([{
     id: 'A1', addresses: ['F1'], fixable_by: 'content', apply_tool: 'aem_publish',

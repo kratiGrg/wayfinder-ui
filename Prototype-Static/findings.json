@@ -1,13 +1,9 @@
 {
   "concierge_id": "6af98add4843b8ffbde511d1",
-  "concierge_name": "Wknd - demo-DONOTDELETE",
+  "concierge_name": "Wknd - demo",
   "sandbox": "acs-onshore-demo",
-  "window": {
-    "start": "2026-11-22",
-    "end": "2026-11-26",
-    "scope": "ranged"
-  },
-  "generated_at": "2026-11-25T16:44:34.996590Z",
+  "window": {"start": "2026-11-20", "end": "2026-11-27", "scope": "ranged"},
+  "generated_at": "2026-11-27T05:55:52Z",
   "findings": [
     {
       "id": "F1",
@@ -16,21 +12,13 @@
       "subtype": "Content Gap",
       "review_risk": null,
       "theme": "Japan / Tokyo adventures",
-      "example_questions": [
-        "Do you have any adventure in Japan",
-        "I am looking for an adventure in Tokyo",
-        "I am looking for adventure to Tokyo Skyscaper"
-      ],
-      "frequency": 3,
-      "conversations": 3,
-      "conversation_ids": [
-        "8160db51-7436-4054-b707-56575311e01a",
-        "3cd46f67-dbd0-4231-b357-41b0511baa98",
-        "e9bc061d-fdcb-4c41-bc37-73538b7fe360"
-      ],
+      "example_questions": ["Do you have any adventure in Japan", "I am looking for an adventure in Tokyo"],
+      "frequency": 2,
+      "conversations": 2,
+      "conversation_ids": ["8160db51-7436-4054-b707-56575311e01a", "3cd46f67-dbd0-4231-b357-41b0511baa98"],
       "prompt_source": "other",
       "conversation_id": "8160db51-7436-4054-b707-56575311e01a",
-      "evidence": "\"I wasn't able to find a specific Wknd adventure trip in Japan in the available content.\""
+      "evidence": "\"I wasn't able to find a specific Wknd adventure trip in Japan in the available content.\" (Phase-3 note: an unpublished Tokyo/Japan author page exists and just needs publishing — addressed by A1.)"
     },
     {
       "id": "F2",
@@ -38,38 +26,89 @@
       "bucket_label": "Unresolved",
       "subtype": "Content Gap",
       "review_risk": null,
-      "theme": "Australia adventure (deflected despite content existing)",
-      "example_questions": [
-        "looking for adventure in Australia"
-      ],
-      "frequency": 1,
-      "conversations": 1,
-      "conversation_ids": [
-        "8dc4c35c-d51d-487d-ab30-9a6d2117afe6"
-      ],
+      "theme": "India / Himalayas / Kashmir adventures (hard deflection)",
+      "example_questions": ["I am looking for adventures in Himalayas, India", "Looking for Skiing in Kashmir, India", "Any adventure in India"],
+      "frequency": 4,
+      "conversations": 4,
+      "conversation_ids": ["a45fb16e-d956-45b5-b9e2-f32aa1ff2592", "ef89123c-9ea8-4b3b-bdf6-4aad56a8bd68", "a70e2433-e351-4ed1-84c3-046326ccf086", "2d39c807-d504-4af0-b37a-51c0039211f7"],
       "prompt_source": "other",
-      "conversation_id": "8dc4c35c-d51d-487d-ab30-9a6d2117afe6",
-      "evidence": "\"That particular topic is a bit outside my area of expertise\" \u2014 a deflection on an Australia ask."
+      "conversation_id": "a45fb16e-d956-45b5-b9e2-f32aa1ff2592",
+      "evidence": "\"That particular topic is a bit outside my area of expertise for this conversation\" — hard deflection to India-region asks."
     },
     {
       "id": "F3",
+      "bucket": "dont_know",
+      "bucket_label": "Unresolved",
+      "subtype": "Content Gap",
+      "review_risk": null,
+      "theme": "Australia adventure (hard deflection)",
+      "example_questions": ["looking for adventure in Australia"],
+      "frequency": 1,
+      "conversations": 1,
+      "conversation_ids": ["8dc4c35c-d51d-487d-ab30-9a6d2117afe6"],
+      "prompt_source": "other",
+      "conversation_id": "8dc4c35c-d51d-487d-ab30-9a6d2117afe6",
+      "evidence": "\"That particular topic is a bit outside my area of expertise\" — yet a Western Australia camping trip exists in the catalog."
+    },
+    {
+      "id": "F4",
+      "bucket": "dont_know",
+      "bucket_label": "Unresolved",
+      "subtype": "Content Gap",
+      "review_risk": null,
+      "theme": "Skyscraper / urban adventures",
+      "example_questions": ["Do you have sky scaper?", "what do you have for sky scapers", "I am looking for adventure to Tokyo Skyscaper"],
+      "frequency": 3,
+      "conversations": 3,
+      "conversation_ids": ["d92cc569-34f9-4fc8-b09e-85d31ed5bd72", "d5929881-c5c9-4bce-8d1d-ee9a64e60e51", "e9bc061d-fdcb-4c41-bc37-73538b7fe360"],
+      "prompt_source": "other",
+      "conversation_id": "d5929881-c5c9-4bce-8d1d-ee9a64e60e51",
+      "evidence": "\"I couldn't find any information about 'sky scrapers' ... that's outside Wknd's scope.\" (Phase-3 note: the 'Tokyo Skyscaper' ask is covered by publishing the unpublished Tokyo/Japan page via A1; purely urban skyscraper asks remain out of catalog.)"
+    },
+    {
+      "id": "F5",
       "bucket": "frequently_asked",
       "bucket_label": "High-Demand",
       "subtype": "Content Review",
       "review_risk": "high",
-      "theme": "List all adventures \u2014 concierge answer not grounded in Content AI",
-      "example_questions": [
-        "list out all the adventures"
-      ],
+      "theme": "\"List all adventures\" returns inconsistent trip lists",
+      "example_questions": ["list out all the adventures"],
       "frequency": 2,
       "conversations": 2,
-      "conversation_ids": [
-        "45e6bb8f-f116-4fa4-865e-6e5e22cec6e2",
-        "d2d2b172-818e-4c78-8518-3be03a4ad0fc"
-      ],
+      "conversation_ids": ["45e6bb8f-f116-4fa4-865e-6e5e22cec6e2", "d2d2b172-818e-4c78-8518-3be03a4ad0fc"],
       "prompt_source": "other",
-      "conversation_id": "d2d2b172-818e-4c78-8518-3be03a4ad0fc",
-      "evidence": "Latest answer (Nov 23 16:27) listed 3 trips; only 1 (Downhill Skiing Wyoming) matches a fresh Content AI call, which returned 6 \u2014 concierge dropped 5 and added 2 ungrounded items (incl. 'San Diego Surf Spots')."
+      "conversation_id": "45e6bb8f-f116-4fa4-865e-6e5e22cec6e2",
+      "evidence": "Same query returned 8 trips in one conversation but only 3 (San Diego, Wyoming, W. Australia) in another."
+    },
+    {
+      "id": "F6",
+      "bucket": "negative_feedback",
+      "bucket_label": "User Dissatisfaction",
+      "subtype": "Content Gap",
+      "review_risk": null,
+      "theme": "Thumbs-down: irrelevant suggestions on skyscraper ask",
+      "example_questions": ["what do you have for sky scapers"],
+      "frequency": 1,
+      "conversations": 1,
+      "conversation_ids": ["d5929881-c5c9-4bce-8d1d-ee9a64e60e51"],
+      "prompt_source": "other",
+      "conversation_id": "d5929881-c5c9-4bce-8d1d-ee9a64e60e51",
+      "evidence": "Thumbs Down (score -1), reason \"Irrelevant suggestions\"."
+    },
+    {
+      "id": "F7",
+      "bucket": "frustration",
+      "bucket_label": "Conversation Friction",
+      "subtype": "Content Gap",
+      "review_risk": null,
+      "theme": "Underwater adventures missing — user frustrated",
+      "example_questions": ["Looking for under water adventures", "how can this be the case that you haven't enlisted anything for under water experience, this is annoying"],
+      "frequency": 3,
+      "conversations": 1,
+      "conversation_ids": ["4e3da6d6-a1eb-492d-8e2e-ec351dc07144"],
+      "prompt_source": "other",
+      "conversation_id": "4e3da6d6-a1eb-492d-8e2e-ec351dc07144",
+      "evidence": "User pushed back over 3 turns: \"this is annoying\" after being told no underwater trips exist."
     }
   ]
 }
